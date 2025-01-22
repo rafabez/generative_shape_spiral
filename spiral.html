@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spiral Particle Movement</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+        }
+        canvas {
+            display: block;
+        }
+        #controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="animationCanvas"></canvas>
+    <div id="controls">
+        <h3>Controls</h3>
+        <label for="generationRateSlider">Generation Rate:</label>
+        <input type="range" id="generationRateSlider" min="1" max="100" value="1">
+        <label for="animationSpeedSlider">Animation Speed:</label>
+        <input type="range" id="animationSpeedSlider" min="0.1" max="5" step="0.1" value="1">
+        <label for="angleSlider">Angle:</label>
+        <input type="range" id="angleSlider" min="0" max="360" value="0">
+        <label for="radiusSlider">Radius:</label>
+        <input type="range" id="radiusSlider" min="0" max="500" value="1">
+        <label for="colorSlider">Color:</label>
+        <input type="range" id="colorSlider" min="0" max="360" value="0">
+        <label for="saturationSlider">Saturation:</label>
+        <input type="range" id="saturationSlider" min="0" max="100" value="100">
+        <label for="shapeSlider">Shape:</label>
+        <input type="range" id="shapeSlider" min="1" max="5" value="1">
+    </div>
+    <script>
+        const canvas = document.getElementById('animationCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const maxParticleSize = 100;
+        const sizeIncrement = 1;
+        const colorTransitionSpeed = 1;
+        let animationSpeed = 1;
+
+        const particles = [];
+
+        let angle = 0;
+        let radius = 1;
+        let color = 0;
+        let saturation = 100;
+        let hue = 0;
+        let lightness = 50;
+
+        const shapes = ['circle', 'triangle', 'square', 'pentagon', 'hexagon'];
+        let currentShapeIndex = 0;
+
+        let generationRate = 1;
+        let lastParticleTime = 1;
+
+        class Particle {
+            constructor() {
+                this.angle = angle;
+                this.radius = radius;
+                this.size = maxParticleSize;
+                this.color = getRandomColor();
+                this.shape = shapes[currentShapeIndex];
+                this.spawnTime = Date.now();
+            }
+
+            update() {
+                // Spiral motion pattern
+                this.angle += 4.3 * animationSpeed; // Adjust motion speed
+                this.radius += 4.3;
+                this.x = canvas.width / 2 + this.radius * Math.cos(this.angle);
+                this.y = canvas.height / 2 + this.radius * Math.sin(this.angle);
+
+                // Gradually decrease size
+                this.size -= sizeIncrement;
+                this.color = transitionColor(color, saturation, hue, lightness);
+            }
+
+            isAlive() {
+                return this.size > 0 && Date.now() - this.spawnTime < 10000; // 10 seconds
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.strokeStyle = 'black';
+                ctx.globalAlpha = this.size / maxParticleSize;
+                ctx.lineWidth = 1;
+
+                if (this.shape === 'circle') {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                } else if (this.shape === 'triangle') {
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y - this.size);
+                    ctx.lineTo(this.x - this.size, this.y + this.size);
+                    ctx.lineTo(this.x + this.size, this.y + this.size);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                } else if (this.shape === 'square') {
+                    ctx.fillRect(this.x - this.size, this.y - this.size, this.size * 2, this.size * 2);
+                } else if (this.shape === 'pentagon') {
+                    const sideLength = this.size * 2 * Math.tan(Math.PI / 5);
+                    const rotationAngle = -Math.PI / 10;
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(rotationAngle);
+                    ctx.beginPath();
+                    for (let i = 0; i < 5; i++) {
+                        ctx.lineTo(Math.cos(i * Math.PI * 2 / 5) * this.size, Math.sin(i * Math.PI * 2 / 5) * this.size);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
+                } else if (this.shape === 'hexagon') {
+                    const sideLength = this.size * 2 * Math.tan(Math.PI / 6);
+                    const rotationAngle = -Math.PI / 12;
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(rotationAngle);
+                    ctx.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        ctx.lineTo(Math.cos(i * Math.PI * 2 / 6) * this.size, Math.sin(i * Math.PI * 2 / 6) * this.size);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function getRandomColor() {
+            const hue = Math.random() * 10;
+            const saturation = Math.random() * 100;
+            const lightness = Math.random() * 100;
+            return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        }
+
+        function transitionColor(color, saturation, hue, lightness) {
+            hue = (color + colorTransitionSpeed) % 360;
+            return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        }
+
+        function createParticles() {
+            if (particles.length < maxParticleSize && Date.now() - lastParticleTime >= 1000 / generationRate) {
+                particles.push(new Particle());
+                lastParticleTime = Date.now();
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach((particle, index) => {
+                particle.update();
+                particle.draw();
+
+                if (!particle.isAlive()) {
+                    particles.splice(index, 1);
+                }
+            });
+
+            if (particles.length < maxParticleSize) {
+                createParticles();
+            }
+        }
+
+        // Update angle, radius, color, saturation, shape, and animation speed based on sliders
+        const angleSlider = document.getElementById('angleSlider');
+        angleSlider.addEventListener('input', (event) => {
+            angle = parseFloat(event.target.value);
+        });
+
+        const radiusSlider = document.getElementById('radiusSlider');
+        radiusSlider.addEventListener('input', (event) => {
+            radius = parseFloat(event.target.value);
+        });
+
+        const colorSlider = document.getElementById('colorSlider');
+        colorSlider.addEventListener('input', (event) => {
+            color = parseFloat(event.target.value);
+        });
+
+        const saturationSlider = document.getElementById('saturationSlider');
+        saturationSlider.addEventListener('input', (event) => {
+            saturation = parseFloat(event.target.value);
+        });
+
+        const shapeSlider = document.getElementById('shapeSlider');
+        shapeSlider.addEventListener('input', (event) => {
+            currentShapeIndex = parseInt(event.target.value) - 1;
+        });
+
+        const generationRateSlider = document.getElementById('generationRateSlider');
+        generationRateSlider.addEventListener('input', (event) => {
+            generationRate = parseFloat(event.target.value);
+        });
+
+        const animationSpeedSlider = document.getElementById('animationSpeedSlider');
+        animationSpeedSlider.addEventListener('input', (event) => {
+            animationSpeed = parseFloat(event.target.value);
+        });
+
+        createParticles();
+        animate();
+    </script>
+</body>
+</html>
